@@ -1,0 +1,68 @@
+﻿@page "/photo/new"
+@using System.Net.Http.Headers
+@inject HttpClient Http
+@inject IConfiguration Configuration
+@inject NavigationManager NavigationManager
+@inject Client Client
+
+<AuthorizeView>
+    <MudPaper Class="pa-12">
+        <MudText Typo="Typo.h2" Align="Align.Center" Class="mb-8">Új kép</MudText>
+        <MudForm Class="pa-12" @bind-IsValid="isValid">
+            <MudTextField @bind-Value="@Instance.Name" Label="Név" Variant="Variant.Outlined" Class="mb-4" Required="true" />
+
+            @*Itt még hiányzik a kép feltöltés gomb*@
+            <InputFile id="fileInput" OnChange="UploadFiles">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary">Kép feltöltés</MudButton>
+            </InputFile>
+            <MudButton Class="mr-4 d-inline" Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleUpdate">Mentés</MudButton>
+            <MudButton Class="d-inline" Color="Color.Error" Variant="Variant.Filled" OnClick="HandleCancel">Mégse</MudButton>
+        </MudForm>
+    </MudPaper>
+</AuthorizeView>
+
+@code {
+    private string error = "";
+    bool isValid = true;
+    private Photo Instance { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+    }
+
+    private void HandleCancel()
+    {
+        NavigationManager.NavigateTo("/myphotos");
+    }
+
+    IList<IBrowserFile> files = new List<IBrowserFile>();
+    private void UploadFiles(InputFileChangeEventArgs file)
+    {
+        files.Clear();
+        files.Add(file.File);
+    }
+
+    private async void HandleUpdate()
+    {
+        try
+        {
+            var photo = await Client.ApiPhotoPostAsync(Instance.Name);
+            using (var multipartFormContent = new MultipartFormDataContent())
+            {
+                //Load the file and set the file's Content-Type header
+                var fileStreamContent = new StreamContent(files.FirstOrDefault().OpenReadStream(20480000));
+                fileStreamContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+
+                //Add the file
+                multipartFormContent.Add(fileStreamContent, name: "image", fileName: files.FirstOrDefault().Name);
+
+                //Send it
+                var response = await Http.PutAsync("/api/photo/" + photo.ID, multipartFormContent);
+            }
+            NavigationManager.NavigateTo("/photo/" + photo.ID);
+        }catch(Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+}

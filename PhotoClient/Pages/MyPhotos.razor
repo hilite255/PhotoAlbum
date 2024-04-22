@@ -1,0 +1,104 @@
+﻿@page "/myphotos"
+@inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
+@inject Client Client
+
+
+<MudText Typo="Typo.h2" Align="Align.Center" Class="mb-16">Saját képek</MudText>
+
+<MudButton Class="mb-8" Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleNew">Új kép</MudButton>
+
+<MudButton Class="mb-8" Variant="Variant.Filled" Color="Color.Primary" OnClick="OrderByName">Rendezés név szerint</MudButton>
+
+<MudButton Class="mb-8" Variant="Variant.Filled" Color="Color.Primary" OnClick="OrderByDate">Rendezés dátum szerint</MudButton>
+
+<MudGrid Justify="Justify.FlexStart" Class="mb-16">
+    @foreach (var p in photos)
+    {
+            <MudCard Style="width:256px" Class="ma-2" @onclick="() => Navigate(p.ID)">
+                <MudCardMedia Image=@($"https://localhost:7158/api/photo/image/{p.ID}") Height="256" />
+                <MudCardContent>
+                    <MudText Typo="Typo.h5">@p.Name</MudText>
+                    <MudText Typo="Typo.h6">@p.UploadTime</MudText>
+                </MudCardContent>
+            </MudCard>
+    }
+</MudGrid>
+
+@code {
+
+    List<Photo> photos = new List<Photo>();
+
+    string order = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var res = await Client.ApiPhotoGetAsync();
+        photos = res.ToList();
+
+    }
+
+    public void Navigate(int id)
+    {
+        NavigationManager.NavigateTo("/photo/" + id);
+    }
+
+    public void HandleNew()
+    {
+        NavigationManager.NavigateTo("/photo/new");
+    }
+
+    public void OrderByName()
+    {
+        Console.WriteLine(order);
+        switch (order)
+        {
+            case "nameAsc":
+                {
+                    order = "nameDesc";
+                    photos = photos.OrderByDescending(p => p.Name).ToList();
+                    break;
+                }
+            case "nameDesc":
+                {
+                    order = "";
+                    photos = photos.OrderBy(p => p.ID).ToList();
+                    break;
+                }
+            default:
+                {
+                    order = "nameAsc";
+                    photos = photos.OrderBy(p => p.Name).ToList();
+                    break;
+                }
+        }
+        StateHasChanged();
+    }
+
+    public void OrderByDate()
+    {
+        Console.WriteLine(order);
+        switch (order)
+        {
+            case "dateAsc":
+                {
+                    order = "dateDesc";
+                    photos = photos.OrderByDescending(p => p.UploadTime).ToList();
+                    break;
+                }
+            case "dateDesc":
+                {
+                    order = "";
+                    photos = photos.OrderBy(p => p.ID).ToList();
+                    break;
+                }
+            default:
+                {
+                    order = "dateAsc";
+                    photos = photos.OrderBy(p => p.UploadTime).ToList();
+                    break;
+                }
+        }
+        StateHasChanged();
+    }
+}

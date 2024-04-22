@@ -1,0 +1,74 @@
+﻿@page "/login"
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
+
+<MudText Typo="Typo.h2" Align="Align.Center" Class="mb-16">Bejelentkezés</MudText>
+
+<AuthorizeView>
+    <Authorized>
+        <MudText>Már be vagy jelentkezve</MudText>
+    </Authorized>
+    <NotAuthorized>
+        <MudGrid Justify="Justify.Center">
+            <MudItem xs="6">
+                <MudCard>
+                    <MudForm Class="pa-12" @bind-IsValid="isValid">
+                        <MudTextField @bind-Value="@user.Username"
+                                      Class="mb-4"
+                                      Variant="Variant.Outlined"
+                                      T="string"
+                                      Immediate="true"
+                                      Label="Felhasználónév"
+                                      Required="true"
+                                      RequiredError="Felhasználónév megadása kötelező" />
+                        <MudTextField @bind-Value="@user.Password"
+                                      Class="mb-4"
+                                      Variant="Variant.Outlined"
+                                      T="string"
+                                      InputType="InputType.Password"
+                                      Immediate="true"
+                                      Label="Jelszó"
+                                      Required="true"
+                                      RequiredError="Jelszó megadása kötelező" />
+                        @foreach (var item in errors)
+                        {
+                            <MudText Color="Color.Error">@item</MudText>
+                        }
+                        <MudButton Variant="Variant.Filled" class="mt-4" Color="Color.Primary" Disabled="@(!isValid)" OnClick="HandleLogin">Bejelentkezés</MudButton>
+                    </MudForm>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+
+
+
+@code {
+    LoginDTO user = new LoginDTO();
+    bool isValid;
+    List<string> errors = new();
+
+    async Task HandleLogin()
+    {
+        errors.Clear();
+
+        var result = await Http.PostAsJsonAsync("api/user/login", user);
+        if (result.StatusCode != System.Net.HttpStatusCode.OK)
+        {
+            var error = await result.Content.ReadAsStringAsync();
+            errors.Add(error);
+            return;
+        }
+        var content = JObject.Parse(await result.Content.ReadAsStringAsync());
+        Console.WriteLine(content);
+        string token = content.GetValue("token").ToString();
+        await LocalStorage.SetItemAsync("token", token);
+        await AuthStateProvider.GetAuthenticationStateAsync();
+        NavigationManager.NavigateTo("/myphotos");
+    }
+}

@@ -1,0 +1,42 @@
+﻿@page "/photo/{id}"
+@inject HttpClient Http
+@inject IConfiguration Configuration
+@inject NavigationManager NavigationManager
+@inject Client Client
+
+@if (error != "")
+{
+    <MudText Color="Color.Error">@error</MudText>
+}
+else
+{
+    <MudText Typo="Typo.h2" Align="Align.Center" Class="mb-16">@Instance.Name</MudText>
+    <center>
+        <MudImage Class="mb-16" ObjectPosition="ObjectPosition.Center" Src="@imageAddress" onerror="this.src='https://via.placeholder.com/512'" />
+    </center>
+    <AuthorizeView>
+        <center>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="HandleDelete">Törlés</MudButton>
+        </center>
+    </AuthorizeView>
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = "";
+    private string imageAddress;
+    private string error = "";
+    private Photo Instance { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Instance = await Client.ApiPhotoGetAsync(Int32.Parse(Id));
+        imageAddress = "https://localhost:7158" + "/api/photo/image/" + Id;
+    }
+
+    private async void HandleDelete()
+    {
+        await Client.ApiPhotoDeleteAsync(Int32.Parse(Id));
+        NavigationManager.NavigateTo("/myphotos");
+    }
+}
