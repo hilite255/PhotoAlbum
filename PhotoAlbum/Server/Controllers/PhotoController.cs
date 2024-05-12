@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PhotoAlbum.Shared.DTOs;
 using PhotoAlbum.Shared.Model;
 
 namespace PhotoAlbum.Server.Controllers
@@ -10,7 +11,7 @@ namespace PhotoAlbum.Server.Controllers
     public class PhotoController : ControllerBase
     {
         private readonly DatabaseContext _dbcontext;
-        private readonly string imagePath = "..\\images";
+        private readonly string imagePath = ".\\";
         public PhotoController(DatabaseContext dbcontext)
         {
             _dbcontext = dbcontext;
@@ -18,20 +19,22 @@ namespace PhotoAlbum.Server.Controllers
 
         [Authorize(AuthenticationSchemes = "Bearer")]
         [HttpGet("{id}")]
-        public async Task<ActionResult<Photo>> GetPhoto(int id)
+        public async Task<ActionResult<PhotoDTO>> GetPhoto(int id)
         {
-            return await _dbcontext.Photos.SingleOrDefaultAsync(p => p.ID == id);
+            var photo = await _dbcontext.Photos.SingleOrDefaultAsync(p => p.ID == id);
+            if (photo == null) return NotFound();
+            return Ok(photo.ToDTO());
         }
 
         [Authorize(AuthenticationSchemes = "Bearer")]
         [HttpGet("")]
-        public async Task<ActionResult<List<Photo>>> GetMyPhotos()
+        public async Task<ActionResult<List<PhotoDTO>>> GetMyPhotos()
         {
             if (User == null || User.Identity == null || User.Identity.Name == null)
             {
                 return Unauthorized();
             }
-            return await _dbcontext.Photos.Where(p => p.Owner == User.Identity.Name).ToListAsync();
+            return await _dbcontext.Photos.Where(p => p.Owner == User.Identity.Name).Select(p => p.ToDTO()).ToListAsync();
         }
 
         [Authorize(AuthenticationSchemes = "Bearer")]
@@ -41,9 +44,15 @@ namespace PhotoAlbum.Server.Controllers
             if (image == null)
                 return NotFound();
             string extension = Path.GetExtension(image.FileName);
-            using (var stream = new FileStream($"{imagePath}\\{id}{extension}", FileMode.OpenOrCreate))
+            using (var stream = new MemoryStream())
             {
                 await image.CopyToAsync(stream);
+                var bytes = stream.ToArray();
+                var photo = await _dbcontext.Photos.SingleOrDefaultAsync(p => p.ID == id);
+                if (photo == null)
+                    return NotFound();
+                photo.Image = bytes;
+                await _dbcontext.SaveChangesAsync();
             }
 
             return Ok();
@@ -51,29 +60,34 @@ namespace PhotoAlbum.Server.Controllers
 
         [Authorize(AuthenticationSchemes = "Bearer")]
         [HttpPost("{name}")]
-        public async Task<ActionResult<Photo>> CreatePhoto(string name)
+        public async Task<ActionResult<PhotoDTO>> CreatePhoto(string name)
         {
             if (User == null || User.Identity == null || User.Identity.Name == null)
             {
                 return Unauthorized();
             }
-            var photo = new Photo() { Name = name, UploadTime = DateTime.Now, Owner = User.Identity.Name };
+            var photo = new Photo() { Name = name, UploadTime = DateTime.Now, Owner = User.Identity.Name, Image = Array.Empty<byte>() };
             await _dbcontext.AddAsync(photo);
             await _dbcontext.SaveChangesAsync();
 
-            return photo;
+            return photo.ToDTO();
         }
 
         [HttpGet("image/{imageId}")]
         public IActionResult GetImage(int imageId)
         {
+            var photo = _dbcontext.Photos.SingleOrDefault(p => p.ID == imageId);
+            if (photo == null) return NotFound();
+            return new FileStreamResult(new MemoryStream(photo.Image), $"image/jpeg");
+
             var files = Directory.GetFiles(imagePath, $"{imageId}.*");
             if (files.Length > 0)
             {
                 string extension = Path.GetExtension(files.First());
-                return new FileStreamResult(new FileStream(files.First(), FileMode.Open, FileAccess.Read, FileShare.Read), $"image/{extension}");
+                return new FileStreamResult(new FileStream(files.First(), FileMode.Open, FileAccess.Read, FileShare.Read), $"{extension}");
             }
             return NotFound();
+            
         }
 
         [Authorize(AuthenticationSchemes = "Bearer")]

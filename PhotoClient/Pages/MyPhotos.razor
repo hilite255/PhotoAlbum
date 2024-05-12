@@ -16,7 +16,7 @@
     @foreach (var p in photos)
     {
             <MudCard Style="width:256px" Class="ma-2" @onclick="() => Navigate(p.ID)">
-                <MudCardMedia Image=@($"https://localhost:7158/api/photo/image/{p.ID}") Height="256" />
+            <MudCardMedia Image=@($"https://felholabbackend.azurewebsites.net/api/photo/image/{p.ID}") Height="256" />
                 <MudCardContent>
                     <MudText Typo="Typo.h5">@p.Name</MudText>
                     <MudText Typo="Typo.h6">@p.UploadTime</MudText>
@@ -27,7 +27,7 @@
 
 @code {
 
-    List<Photo> photos = new List<Photo>();
+    List<PhotoDTO> photos = new List<PhotoDTO>();
 
     string order = "";
 

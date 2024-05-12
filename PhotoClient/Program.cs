@@ -10,7 +10,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-var http = new HttpClient { BaseAddress = new Uri("https://localhost:7158/") };
+var http = new HttpClient { BaseAddress = new Uri("https://felholabbackend.azurewebsites.net/") };
 builder.Services.AddScoped(sp => http);
 builder.Services.AddScoped(sp => new Client(http));
 

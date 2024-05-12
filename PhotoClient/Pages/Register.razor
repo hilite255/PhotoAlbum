@@ -2,6 +2,7 @@
 @inject HttpClient Http
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
 
 <MudText Typo="Typo.h2" Align="Align.Center" Class="mb-16">Regisztráció</MudText>
 
@@ -51,8 +52,7 @@
             errors.Add(error);
             return;
         }
-        var content = JObject.Parse(await result.Content.ReadAsStringAsync());
-        Console.WriteLine(content);
+        await HandleLogin();
     }
 
     async Task HandleLogin()
@@ -70,6 +70,7 @@
         string token = content.GetValue("token").ToString();
         await LocalStorage.SetItemAsync("token", token);
         await AuthStateProvider.GetAuthenticationStateAsync();
+        NavigationManager.NavigateTo("/myphotos");
     }
 
     private class RegisterDto

@@ -26,12 +26,12 @@ else
     public string Id { get; set; } = "";
     private string imageAddress;
     private string error = "";
-    private Photo Instance { get; set; } = new();
+    private PhotoDTO Instance { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
         Instance = await Client.ApiPhotoGetAsync(Int32.Parse(Id));
-        imageAddress = "https://localhost:7158" + "/api/photo/image/" + Id;
+        imageAddress = "https://felholabbackend.azurewebsites.net/" + "/api/photo/image/" + Id;
     }
 
     private async void HandleDelete()

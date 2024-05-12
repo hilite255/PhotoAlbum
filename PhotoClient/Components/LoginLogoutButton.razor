@@ -20,6 +20,13 @@
                    EndIcon="@Icons.Material.Filled.Login">
             Bejelentkezés
         </MudButton>
+        <MudButton Class="ma-1"
+                   @onclick="Register"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   EndIcon="@Icons.Material.Filled.Login">
+            Regisztráció
+        </MudButton>
     </NotAuthorized>
 </AuthorizeView>
 
@@ -27,6 +34,11 @@
     void Login()
     {
         NavigationManager.NavigateTo("login");
+    }
+
+    void Register()
+    {
+        NavigationManager.NavigateTo("register");
     }
 
     async Task Logout()
